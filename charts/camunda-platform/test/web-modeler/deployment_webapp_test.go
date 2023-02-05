@@ -184,3 +184,50 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetServerHttpsOnly() {
 	env := deployment.Spec.Template.Spec.Containers[0].Env
 	s.Require().Contains(env, corev1.EnvVar{Name: "SERVER_HTTPS_ONLY", Value: "true"})
 }
+
+// TODO readinessProbe is disabled
+// readinessProbe is enabled by default, so it's tested by golden files.
+
+func (s *webappDeploymentTemplateTest) TestContainerStartupProbePath() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"web-modeler.enabled":                       "true",
+			"web-modeler.webapp.startupProbe.enabled":   "true",
+			"web-modeler.webapp.startupProbe.probePath": "/healthz",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	probe := deployment.Spec.Template.Spec.Containers[0].StartupProbe
+
+	s.Require().Equal("/healthz", probe.HTTPGet.Path)
+}
+
+func (s *webappDeploymentTemplateTest) TestContainerLivenessProbePath() {
+	// given
+	options := &helm.Options{
+		SetValues: map[string]string{
+			"web-modeler.enabled":                        "true",
+			"web-modeler.webapp.livenessProbe.enabled":   "true",
+			"web-modeler.webapp.livenessProbe.probePath": "/healthz",
+		},
+		KubectlOptions: k8s.NewKubectlOptions("", "", s.namespace),
+	}
+
+	// when
+	output := helm.RenderTemplate(s.T(), options, s.chartPath, s.release, s.templates)
+	var deployment appsv1.Deployment
+	helm.UnmarshalK8SYaml(s.T(), output, &deployment)
+
+	// then
+	probe := deployment.Spec.Template.Spec.Containers[0].LivenessProbe
+
+	s.Require().EqualValues("/healthz", probe.HTTPGet.Path)
+}
