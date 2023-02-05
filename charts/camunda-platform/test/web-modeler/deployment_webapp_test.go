@@ -188,7 +188,7 @@ func (s *webappDeploymentTemplateTest) TestContainerShouldSetServerHttpsOnly() {
 // TODO readinessProbe is disabled
 // readinessProbe is enabled by default, so it's tested by golden files.
 
-func (s *webappDeploymentTemplateTest) TestContainerStartupProbePath() {
+func (s *webappDeploymentTemplateTest) TestContainerStartupProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -208,9 +208,10 @@ func (s *webappDeploymentTemplateTest) TestContainerStartupProbePath() {
 	probe := deployment.Spec.Template.Spec.Containers[0].StartupProbe
 
 	s.Require().Equal("/healthz", probe.HTTPGet.Path)
+	s.Require().Equal("http-management", probe.HTTPGet.Port.StrVal)
 }
 
-func (s *webappDeploymentTemplateTest) TestContainerLivenessProbePath() {
+func (s *webappDeploymentTemplateTest) TestContainerLivenessProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -229,5 +230,6 @@ func (s *webappDeploymentTemplateTest) TestContainerLivenessProbePath() {
 	// then
 	probe := deployment.Spec.Template.Spec.Containers[0].LivenessProbe
 
-	s.Require().EqualValues("/healthz", probe.HTTPGet.Path)
+	s.Require().Equal("/healthz", probe.HTTPGet.Path)
+	s.Require().Equal("http-management", probe.HTTPGet.Port.StrVal)
 }

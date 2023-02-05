@@ -70,7 +70,7 @@ func (s *websocketsDeploymentTemplateTest) TestContainerStartupProbe() {
 	// then
 	probe := deployment.Spec.Template.Spec.Containers[0].StartupProbe
 
-	s.Require().EqualValues("http", probe.TCPSocket.Port.StrVal)
+	s.Require().Equal("http", probe.TCPSocket.Port.StrVal)
 }
 
 func (s *websocketsDeploymentTemplateTest) TestContainerLivenessProbe() {
@@ -91,5 +91,5 @@ func (s *websocketsDeploymentTemplateTest) TestContainerLivenessProbe() {
 	// then
 	probe := deployment.Spec.Template.Spec.Containers[0].LivenessProbe
 
-	s.Require().EqualValues("http", probe.TCPSocket.Port.StrVal)
+	s.Require().Equal("http", probe.TCPSocket.Port.StrVal)
 }

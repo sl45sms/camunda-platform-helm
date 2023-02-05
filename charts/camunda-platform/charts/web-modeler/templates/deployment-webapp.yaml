@@ -105,11 +105,14 @@ spec:
         - containerPort: 8070
           name: http
           protocol: TCP
+        - containerPort: 8071
+          name: http-management
+          protocol: TCP
         {{- if .Values.webapp.startupProbe.enabled }}
         startupProbe:
           httpGet:
             path: {{ .Values.webapp.startupProbe.probePath }}
-            port: http
+            port: http-management
           initialDelaySeconds: {{ .Values.webapp.startupProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.webapp.startupProbe.periodSeconds }}
           successThreshold: {{ .Values.webapp.startupProbe.successThreshold }}
@@ -120,7 +123,7 @@ spec:
         readinessProbe:
           httpGet:
             path: {{ .Values.webapp.readinessProbe.probePath }}
-            port: http
+            port: http-management
           initialDelaySeconds: {{ .Values.webapp.readinessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.webapp.readinessProbe.periodSeconds }}
           successThreshold: {{ .Values.webapp.readinessProbe.successThreshold }}
@@ -131,7 +134,7 @@ spec:
         livenessProbe:
           httpGet:
             path: {{ .Values.webapp.livenessProbe.probePath }}
-            port: http
+            port: http-management
           initialDelaySeconds: {{ .Values.webapp.livenessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.webapp.livenessProbe.periodSeconds }}
           successThreshold: {{ .Values.webapp.livenessProbe.successThreshold }}

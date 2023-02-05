@@ -114,7 +114,7 @@ spec:
         startupProbe:
           httpGet:
             path: {{ .Values.restapi.startupProbe.probePath }}
-            port: http
+            port: http-management
           initialDelaySeconds: {{ .Values.restapi.startupProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.restapi.startupProbe.periodSeconds }}
           successThreshold: {{ .Values.restapi.startupProbe.successThreshold }}
@@ -125,7 +125,7 @@ spec:
         readinessProbe:
           httpGet:
             path: {{ .Values.restapi.readinessProbe.probePath }}
-            port: http
+            port: http-management
           initialDelaySeconds: {{ .Values.restapi.readinessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.restapi.readinessProbe.periodSeconds }}
           successThreshold: {{ .Values.restapi.readinessProbe.successThreshold }}
@@ -136,7 +136,7 @@ spec:
         livenessProbe:
           httpGet:
             path: {{ .Values.restapi.livenessProbe.probePath }}
-            port: http
+            port: http-management
           initialDelaySeconds: {{ .Values.restapi.livenessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.restapi.livenessProbe.periodSeconds }}
           successThreshold: {{ .Values.restapi.livenessProbe.successThreshold }}

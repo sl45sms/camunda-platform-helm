@@ -216,7 +216,7 @@ func (s *restapiDeploymentTemplateTest) TestContainerShouldSetSmtpCredentials() 
 // TODO readinessProbe is disabled
 // readinessProbe is enabled by default, so it's tested by golden files.
 
-func (s *restapiDeploymentTemplateTest) TestContainerStartupProbePath() {
+func (s *restapiDeploymentTemplateTest) TestContainerStartupProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -236,9 +236,10 @@ func (s *restapiDeploymentTemplateTest) TestContainerStartupProbePath() {
 	probe := deployment.Spec.Template.Spec.Containers[0].StartupProbe
 
 	s.Require().Equal("/healthz", probe.HTTPGet.Path)
+	s.Require().Equal("http-management", probe.HTTPGet.Port.StrVal)
 }
 
-func (s *restapiDeploymentTemplateTest) TestContainerLivenessProbePath() {
+func (s *restapiDeploymentTemplateTest) TestContainerLivenessProbe() {
 	// given
 	options := &helm.Options{
 		SetValues: map[string]string{
@@ -257,5 +258,6 @@ func (s *restapiDeploymentTemplateTest) TestContainerLivenessProbePath() {
 	// then
 	probe := deployment.Spec.Template.Spec.Containers[0].LivenessProbe
 
-	s.Require().EqualValues("/healthz", probe.HTTPGet.Path)
+	s.Require().Equal("/healthz", probe.HTTPGet.Path)
+	s.Require().Equal("http-management", probe.HTTPGet.Port.StrVal)
 }
