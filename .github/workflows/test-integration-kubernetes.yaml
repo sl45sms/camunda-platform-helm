@@ -21,6 +21,7 @@ env:
   GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
   GITHUB_WORKFLOW_RUN_ID: ${{ github.run_id }}
   KUBECONFIG: .github/config/kubeconfig
+  DOCKER_CONFIG_FILE: /home/runner/.docker/config.json
   TEST_SCENARIOS_DIR: test/integration/scenarios
 
 jobs:
@@ -38,9 +39,19 @@ jobs:
         - title: ChartWithDefaultValues
           dir: chart-with-default-values
           description: Test Camunda Platform Helm chart default values
+        - title: ChartUpgrade
+          dir: chart-upgrade
+          description: Test Camunda Platform Helm chart upgrade
+        - title: ChartWithCustomValues
+          dir: chart-with-custom-values
+          description: Test Camunda Platform Helm chart custom values
         - title: ChartWithKeycloakV19
           dir: chart-with-keycloak-v19
-          description: Test Camunda Platform Helm chart with next supported Keycloak version
+          description: Test Camunda Platform Helm chart with next supported Keycloak version v8.2
+        - title: ChartWithWebModeler
+          dir: chart-with-web-modeler
+          description: Test Camunda Platform Helm chart with WebModeler enabled which is still beta
+          dockerLogin: true
     steps:
     - name: Set test vars
       id: vars
@@ -68,6 +79,14 @@ jobs:
       run: |
         make helm.repos-add
         make helm.dependency-update
+    # Log in to Camunda's Docker registry to be able to pull the WebModeler Docker image.
+    - name: Log into Camunda Docker registry
+      if: ${{ matrix.test.dockerLogin }}
+      uses: docker/login-action@v2
+      with:
+        registry: registry.camunda.cloud
+        username: ${{ secrets.CAMUNDA_REGISTRY_USER }}
+        password: ${{ secrets.CAMUNDA_REGISTRY_PASSWORD }}
     - name: Create test namespace
       run: |
         kubectl create ns $TEST_NAMESPACE
@@ -92,11 +111,16 @@ jobs:
       timeout-minutes: 5
       run: |
         task -d $TEST_SCENARIOS_DIR/${{ matrix.test.dir }} test.core
-    - name: Describe Pods in failure
+    - name: Get Pods info on failure
       if: failure()
-      # TODO: Collect logs and store them as artifacts in GitHub Actions.
+      # TODO: Better way to collect logs and store them as artifacts in GitHub Actions.
       run: |
-        kubectl describe po -n $TEST_NAMESPACE
+        kubectl -n $TEST_NAMESPACE get po
+        kubectl -n $TEST_NAMESPACE get po | grep -v "Completed" | awk '/0\//{print $1}' | while read pod_name; do
+          echo -e "\n###Failed Pod: ${pod_name}###\n";
+          kubectl -n $TEST_NAMESPACE describe po ${pod_name};
+          kubectl -n $TEST_NAMESPACE logs ${pod_name};
+        done
     - name: Cleanup test namespace
       if: always() && env.CAMUNDA_DISTRO_TEST_DELETE_NAMESPACE != 'false'
       run: |

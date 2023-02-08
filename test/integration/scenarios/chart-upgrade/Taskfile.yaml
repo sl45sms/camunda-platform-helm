@@ -1,0 +1,70 @@
+version: '3'
+
+env:
+  TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" | default "camunda-platform" }}'
+  CHART_DIR: ../../../../charts/camunda-platform
+  FIXTURES_DIR: ../../fixtures
+
+includes:
+  test.secret: ../lib/testsuite-secret-taskfile.yaml
+  test.preflight:
+    taskfile: ../lib/testsuite-deploy-taskfile.yaml
+    vars:
+      testID: preflight
+  test.core:
+    taskfile: ../lib/testsuite-deploy-taskfile.yaml
+    vars:
+      testID: core
+
+tasks:
+  setup.pre:
+    cmds:
+    - echo "No pre setup task for this test."
+
+  # https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/upgrade/
+  setup.exec:
+    deps:
+    - test.secret
+    cmds:
+    - helm install integration $CHART_DIR
+        --namespace $TEST_NAMESPACE
+        --values $FIXTURES_DIR/values-identity-test-client.yaml
+        --values $FIXTURES_DIR/values-enable-readiness.yaml
+    - |
+      export TASKLIST_SECRET=$(kubectl get secret "integration-tasklist-identity-secret" \
+        -n $TEST_NAMESPACE -o jsonpath="{.data.tasklist-secret}" | base64 --decode)
+      export OPTIMIZE_SECRET=$(kubectl get secret "integration-optimize-identity-secret" \
+        -n $TEST_NAMESPACE -o jsonpath="{.data.optimize-secret}" | base64 --decode)
+      export OPERATE_SECRET=$(kubectl get secret "integration-operate-identity-secret" \
+        -n $TEST_NAMESPACE -o jsonpath="{.data.operate-secret}" | base64 --decode)
+      export KEYCLOAK_ADMIN_SECRET=$(kubectl get secret "integration-keycloak" \
+        -n $TEST_NAMESPACE -o jsonpath="{.data.admin-password}" | base64 --decode)
+      export KEYCLOAK_MANAGEMENT_SECRET=$(kubectl get secret "integration-keycloak" \
+        -n $TEST_NAMESPACE -o jsonpath="{.data.management-password}" | base64 --decode)
+      export POSTGRESQL_SECRET=$(kubectl get secret "integration-postgresql" \
+        -n $TEST_NAMESPACE -o jsonpath="{.data.postgres-password}" | base64 --decode)
+
+      helm upgrade integration $CHART_DIR \
+        --namespace $TEST_NAMESPACE \
+        --set global.identity.auth.tasklist.existingSecret=$TASKLIST_SECRET \
+        --set global.identity.auth.optimize.existingSecret=$OPTIMIZE_SECRET \
+        --set global.identity.auth.operate.existingSecret=$OPERATE_SECRET \
+        --set identity.keycloak.auth.adminPassword=$KEYCLOAK_ADMIN_SECRET \
+        --set identity.keycloak.auth.managementPassword=$KEYCLOAK_MANAGEMENT_SECRET \
+        --set identity.keycloak.postgresql.auth.password=$POSTGRESQL_SECRET \
+        --values $FIXTURES_DIR/values-identity-test-client.yaml \
+        --values $FIXTURES_DIR/values-enable-readiness.yaml \
+        --timeout 15m0s \
+        --wait
+
+  setup.post:
+    cmds:
+    - echo "No post task for this test."
+
+  default:
+    cmds:
+    - task: setup.pre
+    - task: setup.exec
+    - task: setup.post
+    - task: test.preflight
+    - task: test.core
