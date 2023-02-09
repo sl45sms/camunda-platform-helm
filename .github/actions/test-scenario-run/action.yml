@@ -1,0 +1,114 @@
+name: Run Test Scenario
+description: Run Test Scenario based on different parameters
+inputs:
+  test-scenario-dir:
+    description: ""
+    required: true
+  test-scenarios-base-dir:
+    description: ""
+    default: "test/integration/scenarios"
+  kube-config-file:
+    description: ""
+    default: ".github/config/kubeconfig"
+  docker-login-enabled:
+    description: ""
+    default: 'false'
+  docker-login-username:
+    description: ""
+  docker-login-password:
+    description: ""
+  docker-config-file:
+    description: ""
+    default: "/home/runner/.docker/config.json"
+  delete-namespace:
+    description: ""
+    default: "true"
+
+runs:
+  using: "composite"
+  steps:
+  - name: Set test vars
+    shell: bash
+    id: vars
+    env:
+      GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+      GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      GITHUB_WORKFLOW_RUN_ID: ${{ github.run_id }}
+    run: |
+      sudo apt install -y pwgen
+      GITHUB_PR_HEAD_SHA_SHORT=$(echo $GITHUB_PR_HEAD_SHA | cut -c 1-7)
+      # NOTE: We should use the matrix job id var once it's available.
+      # https://github.com/orgs/community/discussions/40291
+      GITHUB_WORKFLOW_JOB_ID=$(pwgen 6 1 -A)
+      # Set full name for the namespace.
+      TEST_NAMESPACE_PART1="camunda-platform-pr-$GITHUB_PR_NUMBER"
+      TEST_NAMESPACE_PART2="sha-$GITHUB_PR_HEAD_SHA_SHORT-run-$GITHUB_WORKFLOW_RUN_ID-sfx-$GITHUB_WORKFLOW_JOB_ID"
+
+      # Add vars to GitHub ENV.
+      cat << EOF >> $GITHUB_ENV
+      GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID
+      KUBECONFIG=${{ inputs.kube-config-file }}
+      DOCKER_CONFIG_FILE=${{ inputs.docker-config-file }}
+      TEST_SCENARIO_DIR=${{ inputs.test-scenarios-base-dir }}/${{ inputs.test-scenario-dir }}
+      TEST_NAMESPACE=$TEST_NAMESPACE_PART1-$TEST_NAMESPACE_PART2
+      EOF
+  - name: Install env dependencies
+    uses: asdf-vm/actions/install@v1
+  - name: Add Helm repos and dependencies
+    shell: bash
+    run: |
+      make helm.repos-add
+      make helm.dependency-update
+  # Log in to Camunda's Docker registry to be able to pull the WebModeler Docker image.
+  - name: Log into Camunda Docker registry
+    if: inputs.docker-login-enabled == 'true'
+    uses: docker/login-action@v2
+    with:
+      registry: registry.camunda.cloud
+      username: ${{ inputs.docker-login-username }}
+      password: ${{ inputs.docker-login-password }}
+  - name: Create test namespace
+    shell: bash
+    run: |
+      kubectl create ns $TEST_NAMESPACE
+      kubectl label ns $TEST_NAMESPACE github-run-id=$GITHUB_WORKFLOW_RUN_ID
+      kubectl label ns $TEST_NAMESPACE github-job-id=$GITHUB_WORKFLOW_JOB_ID
+  - name: Pre setup
+    shell: bash
+    run: |
+      task -d $TEST_SCENARIO_DIR setup.pre
+  - name: Setup Camunda Platform
+    shell: bash
+    run: |
+      task -d $TEST_SCENARIO_DIR setup.exec
+  - name: Post setup
+    shell: bash
+    run: |
+      task -d $TEST_SCENARIO_DIR setup.post
+  - name: ⭐️ Run Preflight TestSuite ⭐️
+    shell: bash
+    run: |
+      task -d $TEST_SCENARIO_DIR test.preflight
+  - name: ⭐️ Run Core TestSuite ⭐️
+    shell: bash
+    run: |
+      task -d $TEST_SCENARIO_DIR test.core
+  - name: Get Pods info on failure
+    shell: bash
+    if: failure()
+    # TODO: Better way to collect logs and store them as artifacts in GitHub Actions.
+    run: |
+      kubectl -n $TEST_NAMESPACE get po
+      kubectl -n $TEST_NAMESPACE get po | grep -v "Completed" | awk '/0\//{print $1}' | while read pod_name; do
+        echo -e "\n###Failed Pod: ${pod_name}###\n";
+        kubectl -n $TEST_NAMESPACE describe po ${pod_name};
+        kubectl -n $TEST_NAMESPACE logs ${pod_name};
+      done
+  - name: Cleanup test namespace
+    shell: bash
+    if: always() && inputs.delete-namespace != 'false'
+    run: |
+      kubectl delete ns \
+        --ignore-not-found=true \
+        -l github-run-id=$GITHUB_WORKFLOW_RUN_ID \
+        -l github-job-id=$GITHUB_WORKFLOW_JOB_ID
