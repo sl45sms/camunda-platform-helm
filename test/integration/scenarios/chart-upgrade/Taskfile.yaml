@@ -6,7 +6,6 @@ env:
   FIXTURES_DIR: ../../fixtures
 
 includes:
-  test.secret: ../lib/testsuite-secret-taskfile.yaml
   test.preflight:
     taskfile: ../lib/testsuite-deploy-taskfile.yaml
     vars:
@@ -23,13 +22,10 @@ tasks:
 
   # https://docs.camunda.io/docs/self-managed/platform-deployment/helm-kubernetes/upgrade/
   setup.exec:
-    deps:
-    - test.secret
     cmds:
     - helm install integration $CHART_DIR
         --namespace $TEST_NAMESPACE
-        --values $FIXTURES_DIR/values-identity-test-client.yaml
-        --values $FIXTURES_DIR/values-enable-readiness.yaml
+        --values $FIXTURES_DIR/values-integration-test.yaml
     - |
       export TASKLIST_SECRET=$(kubectl get secret "integration-tasklist-identity-secret" \
         -n $TEST_NAMESPACE -o jsonpath="{.data.tasklist-secret}" | base64 --decode)
@@ -46,14 +42,13 @@ tasks:
 
       helm upgrade integration $CHART_DIR \
         --namespace $TEST_NAMESPACE \
+        --values $FIXTURES_DIR/values-integration-test.yaml \
         --set global.identity.auth.tasklist.existingSecret=$TASKLIST_SECRET \
         --set global.identity.auth.optimize.existingSecret=$OPTIMIZE_SECRET \
         --set global.identity.auth.operate.existingSecret=$OPERATE_SECRET \
         --set identity.keycloak.auth.adminPassword=$KEYCLOAK_ADMIN_SECRET \
         --set identity.keycloak.auth.managementPassword=$KEYCLOAK_MANAGEMENT_SECRET \
         --set identity.keycloak.postgresql.auth.password=$POSTGRESQL_SECRET \
-        --values $FIXTURES_DIR/values-identity-test-client.yaml \
-        --values $FIXTURES_DIR/values-enable-readiness.yaml \
         --timeout 15m0s \
         --wait
 
@@ -61,7 +56,7 @@ tasks:
     cmds:
     - echo "No post task for this test."
 
-  default:
+  all:
     cmds:
     - task: setup.pre
     - task: setup.exec

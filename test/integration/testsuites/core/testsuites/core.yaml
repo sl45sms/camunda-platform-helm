@@ -1,9 +1,10 @@
 name: Test core functionality of Camunda Platform
 
-# Uppercase vars are provided as Venom env vars.
 vars:
   releaseName: '{{ .RELEASE_NAME | default "integration" }}'
-  venomClientSecret: '{{ .VENOM_CLIENT_SECRET }}'
+  venomClientID: '{{ .TEST_CLIENT_ID | default "venom" }}'
+  # Passed as a Venom var, e.g. "VENOM_VAR_TEST_CLIENT_SECRET".
+  venomClientSecret: "{{ .TEST_CLIENT_SECRET }}"
 
 testcases:
 
@@ -43,7 +44,7 @@ testcases:
     url: "http://{{ .releaseName }}-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token"
     headers:
       Content-Type: application/x-www-form-urlencoded
-    body: "client_id=venom&client_secret={{ .venomClientSecret }}&grant_type=client_credentials"
+    body: "client_id={{ .venomClientID }}&client_secret={{ .venomClientSecret }}&grant_type=client_credentials"
     # info: |
     #   - Response Body: {{ .result.body }}
     assertions:

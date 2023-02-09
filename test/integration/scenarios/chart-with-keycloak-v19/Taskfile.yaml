@@ -6,7 +6,6 @@ env:
   FIXTURES_DIR: ../../fixtures
 
 includes:
-  test.secret: ../lib/testsuite-secret-taskfile.yaml
   test.preflight:
     taskfile: ../lib/testsuite-deploy-taskfile.yaml
     vars:
@@ -25,13 +24,10 @@ tasks:
     - helm dependency update $CHART_DIR/charts/identity
 
   setup.exec:
-    deps:
-    - test.secret
     cmds:
     - helm install integration $CHART_DIR
         --namespace $TEST_NAMESPACE
-        --values $FIXTURES_DIR/values-identity-test-client.yaml
-        --values $FIXTURES_DIR/values-enable-readiness.yaml
+        --values $FIXTURES_DIR/values-integration-test.yaml
         --timeout 15m0s
         --wait
 
@@ -43,7 +39,7 @@ tasks:
         grep "docker.io/bitnami/keycloak:19"
     - git checkout $CHART_DIR/charts/identity/Chart.yaml
 
-  default:
+  all:
     cmds:
     - task: setup.pre
     - task: setup.exec

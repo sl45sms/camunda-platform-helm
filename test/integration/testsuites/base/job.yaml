@@ -38,10 +38,10 @@ spec:
           (cat ./results/venom.log; exit 1)
         env:
         # Used to access get token from Keycloak to access Camunda APIs.
-        - name: VENOM_VAR_VENOM_CLIENT_SECRET
+        - name: VENOM_VAR_TEST_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: integration-venom
+              name: integration-test
               key: client-secret
         volumeMounts:
         - mountPath: /usr/local/bin/zbctl
