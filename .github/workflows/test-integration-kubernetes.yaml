@@ -53,6 +53,13 @@ jobs:
           description: Test Camunda Platform Helm chart with WebModeler enabled which is still beta
           dockerLogin: true
     steps:
+    - uses: actions/checkout@v3
+    - name: Login to GKE
+      uses: ./.github/actions/gke-login
+      with:
+        credentials-json: '${{ secrets.GCP_CREDENTIALS }}'
+        cluster-name: ${{ secrets.GKE_CLUSTER }}
+        cluster-location: ${{ secrets.GKE_ZONE }}
     - name: Set test vars
       id: vars
       run: |
@@ -66,13 +73,6 @@ jobs:
         TEST_NAMESPACE_PART1="camunda-platform-pr-$GITHUB_PR_NUMBER"
         TEST_NAMESPACE_PART2="sha-$GITHUB_PR_HEAD_SHA_SHORT-run-$GITHUB_WORKFLOW_RUN_ID-sfx-$GITHUB_WORKFLOW_JOB_ID"
         echo "TEST_NAMESPACE=$TEST_NAMESPACE_PART1-$TEST_NAMESPACE_PART2" >> $GITHUB_ENV
-    - uses: actions/checkout@v3
-    - name: Login to GKE
-      uses: ./.github/actions/gke-login
-      with:
-        credentials-json: '${{ secrets.GCP_CREDENTIALS }}'
-        cluster-name: ${{ secrets.GKE_CLUSTER }}
-        cluster-location: ${{ secrets.GKE_ZONE }}
     - name: Install env dependencies
       uses: asdf-vm/actions/install@v1
     - name: Add Helm repos and dependencies

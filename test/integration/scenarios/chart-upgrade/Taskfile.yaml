@@ -26,6 +26,7 @@ tasks:
     - helm install integration $CHART_DIR
         --namespace $TEST_NAMESPACE
         --values $FIXTURES_DIR/values-integration-test.yaml
+        {{ env "HELM_EXTRA_ARGS" }}
     - |
       export TASKLIST_SECRET=$(kubectl get secret "integration-tasklist-identity-secret" \
         -n $TEST_NAMESPACE -o jsonpath="{.data.tasklist-secret}" | base64 --decode)
@@ -50,7 +51,7 @@ tasks:
         --set identity.keycloak.auth.managementPassword=$KEYCLOAK_MANAGEMENT_SECRET \
         --set identity.keycloak.postgresql.auth.password=$POSTGRESQL_SECRET \
         --timeout 15m0s \
-        --wait
+        --wait {{ env "HELM_EXTRA_ARGS" }}
 
   setup.post:
     cmds:

@@ -32,6 +32,7 @@ tasks:
         --values ./values-web-modeler-enabled.yaml
         --timeout 15m0s
         --wait
+        {{ env "HELM_EXTRA_ARGS" }}
 
   setup.post:
     cmds:
