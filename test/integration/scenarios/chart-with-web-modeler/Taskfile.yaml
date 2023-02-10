@@ -6,8 +6,8 @@ vars:
   HELM_EXTRA_ARGS: '{{ env "HELM_EXTRA_ARGS" }} {{ .OPENSHIFT_ARGS }}'
 
 dotenv:
-- ../../fixtures/vars.env
-- ../../fixtures/{{ .TEST_CLUSTER_TYPE }}.env
+- ../vars/common.env
+- ../vars/{{ .TEST_CLUSTER_TYPE }}.env
 
 includes:
   test.preflight:
