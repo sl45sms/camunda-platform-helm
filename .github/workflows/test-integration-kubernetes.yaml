@@ -23,6 +23,7 @@ env:
   KUBECONFIG: .github/config/kubeconfig
   DOCKER_CONFIG_FILE: /home/runner/.docker/config.json
   TEST_SCENARIOS_DIR: test/integration/scenarios
+  TEST_CLUSTER_TYPE: kubernetes
 
 jobs:
   test:

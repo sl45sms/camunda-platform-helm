@@ -21,9 +21,7 @@ env:
   KUBECONFIG: .github/config/kubeconfig
   DOCKER_CONFIG_FILE: /home/runner/.docker/config.json
   TEST_SCENARIOS_DIR: test/integration/scenarios
-  HELM_EXTRA_ARGS: |-
-    --values $CHART_DIR/openshift/values-patch.yaml \
-    --post-renderer $CHART_DIR/openshift/patch.sh
+  TEST_CLUSTER_TYPE: openshift
 
 jobs:
   test:
