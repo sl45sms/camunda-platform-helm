@@ -4,6 +4,7 @@ web-modeler:
   image:
     # the pull secret is required to pull the images from Camunda's Docker registry; it's created in the "SetupTest" function
     pullSecrets:
+    - name: index-docker-io
     - name: registry-camunda-cloud
   restapi:
     mail:
